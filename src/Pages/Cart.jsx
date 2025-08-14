@@ -3,6 +3,10 @@ import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 
+
+
+
+
 const Cart = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
