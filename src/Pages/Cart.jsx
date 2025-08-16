@@ -19,7 +19,7 @@ const Cart = () => {
       return;
     }
     axios
-      .get("https://fsd-demo-backend-vo0n.onrender.com/api/cart/view", {
+      .get("https://ecom-backend-zed3.onrender.com/api/cart/view", {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
@@ -45,7 +45,7 @@ const Cart = () => {
       return;
     await axios
       .put(
-        `https://fsd-demo-backend-vo0n.onrender.com/api/cart/update/${productId}`,
+        `https://ecom-backend-zed3.onrender.com/api/cart/update/${productId}`,
         { change },
         {
           headers: { Authorization: `Bearer ${user.token}` },
@@ -65,7 +65,7 @@ const Cart = () => {
 
   const removeFromCart = async (productId) => {
     await axios
-      .delete(`https://fsd-demo-backend-vo0n.onrender.com/api/cart/remove/${productId}`, {
+      .delete(`https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then(() => {
@@ -84,14 +84,15 @@ const placeOrder = async() => {
       alert("cart is empty cannot place order");
       return;
     }
-  await axios
-      .post(
-        "https://fsd-demo-backend-vo0n.onrender.com/api/order/create",
-        { cartItems: cart },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      )
+  await axios.post(
+  "https://ecom-backend-zed3.onrender.com/api/order/create",
+  {}, // no body needed
+  {
+    headers: { Authorization: `Bearer ${user.token}` },
+  }
+)
+
+
       .then(() => {
         alert("Order placed successfully!");
         setCart([]);

@@ -17,7 +17,7 @@ const Order = () => {
       return;
     }
     axios
-      .get("https://fsd-demo-backend-vo0n.onrender.com/api/order/myorders", {
+      .get("https://ecom-backend-zed3.onrender.com/api/order/myorders", {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
@@ -42,29 +42,46 @@ const Order = () => {
   }, [user, navigate]);
 
   const proceedToPayment = async () => {
-    if (!user || !user.token) {
-      navigate("/login");
-      return;
-    }
-    await axios
-      .post(
-        "https://fsd-demo-backend-vo0n.onrender.com/api/payments/checkout",
-        {
-          items: allItems,
-          amount: totalAmount,
-        },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      )
-      .then((res) => {
-        window.location.href = res.data.url;
-      })
-      .catch((err) => {
-        console.log(err);
-        alert("Error in processing payment");
-      });
-  };
+  if (!user || !user.token) {
+    navigate("/login");
+    return;
+  }
+
+  try {
+    const res = await axios.post(
+      "https://ecom-backend-zed3.onrender.com/api/payments/checkout",
+      { amount: totalAmount },
+      { headers: { Authorization: `Bearer ${user.token}` } }
+    );
+
+    const { orderId, amount, currency, key } = res.data;
+
+    const options = {
+      key,
+      amount,
+      currency,
+      name: "E-Comm Store",
+      description: "Order Payment",
+      order_id: orderId,
+      handler: function (response) {
+        alert("Payment successful!");
+        console.log(response);
+        // You can now verify payment on backend if needed
+      },
+      prefill: {
+        email: user.email,
+      },
+      theme: { color: "#3399cc" },
+    };
+
+    const rzp = new window.Razorpay(options);
+    rzp.open();
+  } catch (err) {
+    console.error("Payment error", err.response?.data || err.message);
+    alert("Error in processing payment");
+  }
+};
+
 
   return (
     <div className="p=5 min-h-screen bg-gray-100">

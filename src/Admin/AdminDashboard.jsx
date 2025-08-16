@@ -25,10 +25,10 @@ const AdminDashboard = () => {
     }
 
     Promise.all([
-      axios.get("https://fsd-demo-backend-vo0n.onrender.com/api/products/getproducts", {
+      axios.get("https://ecom-backend-zed3.onrender.com/api/products/getproducts", {
         headers: { Authorization: `Bearer ${user.token}` },
       }),
-      axios.get("https://fsd-demo-backend-vo0n.onrender.com/api/order/allorders", {
+      axios.get("https://ecom-backend-zed3.onrender.com/api/order/allorders", {
         headers: { Authorization: `Bearer ${user.token}` },
       }),
     ])
@@ -46,7 +46,7 @@ const AdminDashboard = () => {
   //Adding the product
   const handleAddProduct = async () => {
     await axios
-      .post("https://fsd-demo-backend-vo0n.onrender.com/api/products/create", newProduct, {
+      .post("https://ecom-backend-zed3.onrender.com/api/products/create", newProduct, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
@@ -72,7 +72,7 @@ const AdminDashboard = () => {
   //edit product
   const handleUpdateProduct = async () => {
     await axios
-      .put(`https://fsd-demo-backend-vo0n.onrender.com/api/products/update/${editId}`, newProduct, {
+      .put(`https://ecom-backend-zed3.onrender.com/api/products/update/${editId}`, newProduct, {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
@@ -91,7 +91,7 @@ const AdminDashboard = () => {
   const handleDeleteProduct = async (id) => {
     if (confirm("Are you you want to delete this product ?")) {
       await axios
-        .delete(`https://fsd-demo-backend-vo0n.onrender.com/api/products/delete/${id}`, {
+        .delete(`https://ecom-backend-zed3.onrender.com/api/products/delete/${id}`, {
           headers: { Authorization: `Bearer ${user.token}` },
         })
         .then(() => {
@@ -107,7 +107,7 @@ const AdminDashboard = () => {
   const handleStatusChange = async (orderId, newStatus) => {
     await axios
       .put(
-        `https://fsd-demo-backend-vo0n.onrender.com/api/order/update/${orderId}`,
+        `https://ecom-backend-zed3.onrender.com/api/order/update/${orderId}`,
         { status: newStatus },
         {
           headers: { Authorization: `Bearer ${user.token}` },
