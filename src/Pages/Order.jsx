@@ -7,11 +7,10 @@ const Order = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [orders, setOrders] = useState([]);
-  const [totalAmount, setTotalAmount] = useState(0);
-  const [allItems, setAllItems] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  useEffect(() => {
+  // ✅ Fetch User Orders
+  const fetchOrders = () => {
     if (!user || !user.token) {
       navigate("/login");
       return;
@@ -21,56 +20,71 @@ const Order = () => {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
-        const fetchedOrders = res.data.data || [];
-        setOrders(fetchedOrders);
+        setOrders(res.data.data || []);
         setLoading(false);
-
-        let combinedItems = [];
-        let total = 0;
-        fetchedOrders.forEach((order) => {
-          combinedItems = [...combinedItems, ...order.products];
-          total += order.totalPrice;
-        });
-        setAllItems(combinedItems);
-        setTotalAmount(total);
       })
       .catch((err) => {
         console.log(err);
-        alert("Error in fetching order");
+        alert("Error in fetching orders");
         setLoading(false);
       });
+  };
+
+  useEffect(() => {
+    fetchOrders();
   }, [user, navigate]);
 
-  const proceedToPayment = async () => {
+  /// ✅ Proceed to Razorpay Checkout
+const proceedToPayment = async (totalAmount, orderId, products) => {
   if (!user || !user.token) {
     navigate("/login");
     return;
   }
 
   try {
+    // 1️⃣ Create Razorpay order in backend with products
     const res = await axios.post(
       "https://ecom-backend-zed3.onrender.com/api/payments/checkout",
-      { amount: totalAmount },
+      { amount: totalAmount, orderId, products }, // ✅ send products too
       { headers: { Authorization: `Bearer ${user.token}` } }
     );
 
-    const { orderId, amount, currency, key } = res.data;
+    const { orderId: razorpayOrderId, amount, currency, key } = res.data;
 
+    // 2️⃣ Razorpay options
     const options = {
       key,
       amount,
       currency,
       name: "E-Comm Store",
       description: "Order Payment",
-      order_id: orderId,
-      handler: function (response) {
-        alert("Payment successful!");
-        console.log(response);
-        // You can now verify payment on backend if needed
+      order_id: razorpayOrderId,
+      handler: async function (response) {
+        try {
+          // 3️⃣ Verify Payment in Backend
+          const verifyRes = await axios.post(
+            "https://ecom-backend-zed3.onrender.com/api/payments/verify",
+            {
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId, // ✅ our DB order
+            },
+            { headers: { Authorization: `Bearer ${user.token}` } }
+          );
+
+          if (verifyRes.data.success) {
+            alert("✅ Payment successful!");
+            fetchOrders(); // refresh orders
+          } else {
+            alert("❌ Payment verification failed");
+          }
+        } catch (err) {
+          console.error("Verification error:", err);
+          alert("❌ Error verifying payment");
+        }
       },
-      prefill: {
-        email: user.email,
-      },
+      prefill: { email: user.email },
       theme: { color: "#3399cc" },
     };
 
@@ -80,9 +94,31 @@ const Order = () => {
     console.error("Payment error", err.response?.data || err.message);
     alert("Error in processing payment");
   }
-  
 };
 
+
+  // ✅ Cancel Order
+  const cancelOrder = async (orderId) => {
+    if (!window.confirm("Are you sure you want to cancel this order?")) return;
+
+    try {
+      const res = await axios.put(
+        `https://ecom-backend-zed3.onrender.com/api/payments/cancel/${orderId}`,
+        {},
+        { headers: { Authorization: `Bearer ${user.token}` } }
+      );
+
+      if (res.data.success) {
+        alert("✅ Order cancelled!");
+        fetchOrders(); // refresh list
+      } else {
+        alert("❌ Could not cancel order");
+      }
+    } catch (err) {
+      console.error("Cancel error:", err);
+      alert("❌ Error cancelling order");
+    }
+  };
 
   return (
     <div className="p=5 min-h-screen bg-gray-100">
@@ -105,38 +141,58 @@ const Order = () => {
                   Order Id: <span className="text-blue-500">{order._id}</span>
                 </h2>
                 <p>
-                  <strong>Status:</strong>
-                  <span className="text-yellow-500">{order.status}</span>
+                  <strong>Status:</strong>{" "}
+                  <span
+                    className={
+                      order.status === "Paid"
+                        ? "text-green-600"
+                        : order.status === "Cancelled"
+                        ? "text-red-600"
+                        : "text-yellow-500"
+                    }
+                  >
+                    {order.status}
+                  </span>
                 </p>
                 <p>
-                  <strong>Total Price:</strong>
-                  <span className="text-green-500">${order.totalPrice}</span>
+                  <strong>Total Price:</strong>{" "}
+                  <span className="text-green-500">₹{order.totalPrice}</span>
                 </p>
-                <h3 className="text-lg font-semibold mt-4 mb-2">🛍️Items:</h3>
-                {order.products?.map((item, index) => {
-                  return (
-                    <div
-                      key={index}
-                      className="border rounded p-2 mb-2 flex justify-between items-center"
+                <h3 className="text-lg font-semibold mt-4 mb-2">🛍️ Items:</h3>
+                {order.products?.map((item, index) => (
+                  <div
+                    key={index}
+                    className="border rounded p-2 mb-2 flex justify-between items-center"
+                  >
+                    <span>{item?.product?.name || "Product Not Found"}</span>
+                    <span>
+                      ₹{item?.product?.price || 0} ❌ {item.quantity}
+                    </span>
+                  </div>
+                ))}
+
+                {/* ✅ Buttons for Pending Orders */}
+                {order.status === "Pending" && (
+                  <div className="flex gap-3 mt-4">
+                    <button
+                      onClick={() =>
+                        proceedToPayment(order.totalPrice, order._id)
+                      }
+                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded shadow"
                     >
-                      <span>{item?.product?.name || "Product Not Found"}</span>
-                      <span>
-                        {item?.product?.price || 0} ❌ {item.quantity}
-                      </span>
-                    </div>
-                  );
-                })}
+                      Proceed to Payment
+                    </button>
+                    <button
+                      onClick={() => cancelOrder(order._id)}
+                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow"
+                    >
+                      Cancel Order
+                    </button>
+                  </div>
+                )}
               </div>
             );
           })}
-          {orders.some((order) => order.status === "Pending") && (
-            <button
-              onClick={proceedToPayment}
-              className="w-full bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded shadow mt-4 mb-4"
-            >
-              Proceed to Payment
-            </button>
-          )}
         </div>
       )}
     </div>

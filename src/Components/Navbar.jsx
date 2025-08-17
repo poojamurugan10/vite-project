@@ -37,12 +37,20 @@ const Navbar = () => {
           )}
 
           {user && !isAdmin && (
-            <Link
-              to="/cart"
-              className="hover:text-blue-600 transition duration-300"
-            >
-              Cart
-            </Link>
+            <>
+              <Link
+                to="/cart"
+                className="hover:text-blue-600 transition duration-300"
+              >
+                Cart
+              </Link>
+              <Link
+                to="/wishlist"
+                className="hover:text-pink-600 transition duration-300"
+              >
+                Wishlist
+              </Link>
+            </>
           )}
 
           {user ? (
@@ -74,4 +82,4 @@ const Navbar = () => {
   );
 };
 
-export default Navbar
+export default Navbar;

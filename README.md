@@ -1,12 +1,48 @@
-# React + Vite
+.
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+🛍️ MERN E-Commerce App
 
-Currently, two official plugins are available:
+This project is a full-stack e-commerce application built with:
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+Frontend: React.js, Axios, Tailwind CSS
 
-## Expanding the ESLint configuration
+Backend: Node.js, Express.js, MongoDB
 
-If you are developing a production application, we recommend using TypeScript with type-aware lint rules enabled. Check out the [TS template](https://github.com/vitejs/vite/tree/main/packages/create-vite/template-react-ts) for information on how to integrate TypeScript and [`typescript-eslint`](https://typescript-eslint.io) in your project.
+Authentication: JWT (JSON Web Token)
+
+Payment Integration: Razorpay
+
+Email Notifications: Nodemailer (Gmail SMTP)
+
+🚀 Features
+
+✅ User Authentication (JWT)
+✅ Add to Cart / Remove from Cart
+✅ Place Order from Cart
+✅ Razorpay Payment Gateway Integration
+✅ Order History (My Orders)
+✅ Cancel Orders (only if not Paid)
+✅ Order Confirmation Email via Nodemailer
+✅ Admin Panel (Optional: can be added for product management)
+
+📂 Project Structure
+ecom-app/
+│
+├── backend/         # Node.js + Express + MongoDB
+│   ├── Controllers/ # orderController.js, productController.js, etc.
+│   ├── Middleware/  # authMiddleware.js
+│   ├── Models/      # User.js, Order.js, Product.js, Cart.js
+│   ├── Routes/      # orderRoute.js, authRoute.js, paymentRoute.js
+│   ├── utils/       # mailer.js
+│   ├── server.js    # Entry point
+│   └── .env         # Environment variables
+│
+├── frontend/        # React.js
+│   ├── src/
+│   │   ├── components/
+│   │   ├── pages/   # Order.jsx, Cart.jsx, etc.
+│   │   ├── Context/ # AuthContext.js
+│   │   └── App.js
+│   └── package.json
+│
+└── README.md

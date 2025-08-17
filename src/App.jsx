@@ -11,9 +11,15 @@ import Success from "./Pages/Success";
 import Cancel from "./Pages/Cancel";
 import NotFound from "./Pages/NotFound";
 import { AuthContext } from "./Context/AuthContext";
+import WishlistPage from "./Pages/WishlistPage";
+import ProductDetails from "./Pages/ProductDetails";
+import Reviews from "./Pages/ReviewSection";
+
+
 
 const App = () => {
   const { user } = useContext(AuthContext);
+
   useEffect(() => {
     console.log("User data from authcontext", user);
   }, [user]);
@@ -28,6 +34,10 @@ const App = () => {
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart />} />
         <Route path="/order" element={<Order />} />
+        <Route path="/wishlist" element={<WishlistPage />} />
+        <Route path="/reviews/:productId" element={<Reviews />} />
+
+        <Route path="/product/:id" element={<ProductDetails />} />
         <Route
           path="/admin"
           element={
@@ -38,6 +48,7 @@ const App = () => {
             )
           }
         />
+         
 
         <Route path="/success" element={<Success />} />
         <Route path="/cancel" element={<Cancel />} />
