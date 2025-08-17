@@ -16,9 +16,9 @@ const WishlistPage = () => {
 
     axios
       .get("https://ecom-backend-zed3.onrender.com/api/wishlist", {
-        headers: { Authorization: `Bearer ${user.token}` },
+        headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
       })
-      .then((res) => setWishlist(res.data.wishlist.products || [])) // ✅ fixed
+      .then((res) => setWishlist(res.data.wishlist.products || []))
       .catch((err) => console.error("Error fetching wishlist:", err));
   }, [user, navigate]);
 
@@ -26,9 +26,9 @@ const WishlistPage = () => {
     try {
       const res = await axios.delete(
         `https://ecom-backend-zed3.onrender.com/api/wishlist/remove/${productId}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` } }
       );
-      setWishlist(res.data.wishlist.products || []); // ✅ fixed
+      setWishlist(res.data.wishlist.products || []); 
     } catch (err) {
       console.error("Error removing item:", err);
     }

@@ -19,7 +19,7 @@ const Success = () => {
         "https://ecom-backend-zed3.onrender.com/api/order/success",
         {},
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${user.token} ` },
         }
       )
       .then(() => {

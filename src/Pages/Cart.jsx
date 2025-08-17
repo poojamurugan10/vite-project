@@ -1,11 +1,8 @@
-import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
+import axios from "axios";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
-
-
-
-
+import api from "../api";
 
 const Cart = () => {
   const { user } = useContext(AuthContext);
@@ -13,22 +10,26 @@ const Cart = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // ✅ Fetch cart on page load
   useEffect(() => {
     if (!user) {
       navigate("/login");
       return;
     }
-    axios
-      .get("https://ecom-backend-zed3.onrender.com/api/cart/view", {
-        headers: { Authorization: `Bearer ${user.token}` },
-      })
+
+    api.get("https://ecom-backend-zed3.onrender.com/api/cart/view", {
+  headers: { Authorization: `Bearer ${user?.token || localStorage.getItem("token")}` }
+})
+
       .then((res) => {
-        setCart(res.data.data.items || []);
-        calculateTotal(res.data.data.items || []);
+        const items = res.data?.data?.items || [];
+        setCart(items);
+        calculateTotal(items);
       })
-      .catch((err) => console.log("Unable to retrieve cart", err));
+      .catch((err) => console.error("Unable to retrieve cart:", err));
   }, [user, navigate]);
 
+  // ✅ Calculate total price
   const calculateTotal = (cartItems) => {
     const total = cartItems.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
@@ -37,118 +38,129 @@ const Cart = () => {
     setTotalPrice(total);
   };
 
+  // ✅ Update quantity
   const updateQuantity = async (productId, change) => {
-    if (
-      cart.find((item) => item.product._id === productId)?.quantity + change <
-      1
-    )
-      return;
-    await axios
-      .put(
+    const item = cart.find((i) => i.product._id === productId);
+    if (!item || item.quantity + change < 1) return;
+
+    try {
+      await axios.put(
         `https://ecom-backend-zed3.onrender.com/api/cart/update/${productId}`,
         { change },
         {
-          headers: { Authorization: `Bearer ${user.token}` },
+          headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
         }
-      )
-      .then(() => {
-        const updatedCart = cart.map((item) =>
-          item.product._id === productId
-            ? { ...item, quantity: item.quantity + change }
-            : item
-        );
-        setCart(updatedCart);
-        calculateTotal(updatedCart);
-      })
-      .catch(() => alert("Error in updating Quantity"));
+      );
+
+      const updatedCart = cart.map((i) =>
+        i.product._id === productId
+          ? { ...i, quantity: i.quantity + change }
+          : i
+      );
+      setCart(updatedCart);
+      calculateTotal(updatedCart);
+    } catch (err) {
+      console.error("Error updating quantity:", err);
+      alert("Error updating quantity");
+    }
   };
 
+  // ✅ Remove item from cart
   const removeFromCart = async (productId) => {
-    await axios
-      .delete(`https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`, {
-        headers: { Authorization: `Bearer ${user.token}` },
-      })
-      .then(() => {
-        const updatedCart = cart.filter(
-          (item) => item.product._id !== productId
-        );
-        setCart(updatedCart);
-        calculateTotal(updatedCart);
-      })
-      .catch(() => alert("Error in removing items to cart"));
+    try {
+      await axios.delete(
+        `https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`,
+        {
+          headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
+        }
+      );
+
+      const updatedCart = cart.filter((i) => i.product._id !== productId);
+      setCart(updatedCart);
+      calculateTotal(updatedCart);
+    } catch (err) {
+      console.error("Error removing item:", err);
+      alert("Error removing item from cart");
+    }
   };
 
- 
-const placeOrder = async() => {
+  // ✅ Place order
+  const placeOrder = async () => {
     if (cart.length === 0) {
-      alert("cart is empty cannot place order");
+      alert("Cart is empty. Cannot place order.");
       return;
     }
-  await axios.post(
-  "https://ecom-backend-zed3.onrender.com/api/order/create",
-  {}, // no body needed
-  {
-    headers: { Authorization: `Bearer ${user.token}` },
-  }
-)
 
+    try {
+      await axios.post(
+        "https://ecom-backend-zed3.onrender.com/api/order/create",
+        {},
+        { headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` } }
+      );
 
-      .then(() => {
-        alert("Order placed successfully!");
-        setCart([]);
-        navigate("/order");
-      })
-      .catch(() => alert("Error placing order!"));
+      alert("Order placed successfully!");
+      setCart([]);
+      setTotalPrice(0);
+      navigate("/order");
+    } catch (err) {
+      console.error("Error placing order:", err);
+      alert("Error placing order!");
+    }
   };
+
   return (
     <div className="p-6 min-h-screen bg-gray-50">
       <h1 className="text-3xl font-bold mb-6 text-center text-gray-800">
-        🛍️Your Cart
+        🛍️ Your Cart
       </h1>
+
       {cart.length === 0 ? (
-        <p className="text-center text-gray-600">Cart is Empty</p>
+        <p className="text-center text-gray-600">Your cart is empty.</p>
       ) : (
         <div className="max-w-5xl mx-auto">
+          {/* Cart Items */}
           <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {cart.map((item) => {
-              return (
-                <div
-                  key={item.product._id}
-                  className="bg-white shadow-lg rounded-lg p-4"
-                >
-                  <h2 className="text-lg font-semibold text-gray-800">
-                    {item.product.name}
-                  </h2>
-                  <p className="text-blue-600 font-bold">
-                    ${item.product.price}
-                  </p>
-                  <div className="flex items-center mt-3">
-                    <button
-                      onClick={() => updateQuantity(item.product._id, -1)}
-                      className="bg-gray-300 hover:bg-gray-400 px-3 py-1 rounded-l"
-                    >
-                      -
-                    </button>
-                    <span className="px-4">{item.quantity}</span>
-                    <button
-                      onClick={() => updateQuantity(item.product._id, 1)}
-                      className="bg-gray-300 hover:bg-gray-400 px-3 py-1 rounded-l"
-                    >
-                      +
-                    </button>
-                  </div>
-                  <div>
-                    <button
-                      onClick={() => removeFromCart(item.product._id)}
-                      className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full"
-                    >
-                      Remove
-                    </button>
-                  </div>
+            {cart.map((item) => (
+              <div
+                key={item.product._id}
+                className="bg-white shadow-lg rounded-lg p-4"
+              >
+                <h2 className="text-lg font-semibold text-gray-800">
+                  {item.product.name}
+                </h2>
+                <p className="text-blue-600 font-bold">
+                  ${item.product.price}
+                </p>
+
+                {/* Quantity Control */}
+                <div className="flex items-center mt-3">
+                  <button
+                    onClick={() => updateQuantity(item.product._id, -1)}
+                    className="bg-gray-300 hover:bg-gray-400 px-3 py-1 rounded-l"
+                  >
+                    -
+                  </button>
+                  <span className="px-4">{item.quantity}</span>
+                  <button
+                    onClick={() => updateQuantity(item.product._id, 1)}
+                    className="bg-gray-300 hover:bg-gray-400 px-3 py-1 rounded-r"
+                  >
+                    +
+                  </button>
                 </div>
-              );
-            })}
+
+                {/* Remove Button */}
+                <button
+                  onClick={() => removeFromCart(item.product._id)}
+                  className="mt-4 bg-red-500 hover:bg-red-600 text-white px-4 py-2 rounded w-full"
+                >
+                  Remove
+                </button>
+              </div>
+            ))}
           </div>
+
+          {/* Total & Place Order */}
           <div className="mt-10 text-center">
             <h2 className="text-2xl font-bold text-gray-800">
               Total Price: ${totalPrice}
