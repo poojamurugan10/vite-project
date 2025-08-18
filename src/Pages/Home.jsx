@@ -1,7 +1,7 @@
-import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import api from "../api"; // uses token from localStorage automatically
 
 const Home = () => {
   const { user } = useContext(AuthContext);
@@ -10,10 +10,32 @@ const Home = () => {
   const [cartItems, setCartItems] = useState([]);
   const [wishlist, setWishlist] = useState([]);
 
+  // Fetch cart
+  const fetchCart = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get("/cart/view"); // relative path
+      setCartItems(res.data.data.items || []);
+    } catch (err) {
+      console.error("Unable to retrieve cart", err.response?.data || err.message);
+    }
+  };
+
+  // Fetch wishlist
+  const fetchWishlist = async () => {
+    if (!user) return;
+    try {
+      const res = await api.get("/wishlist");
+      setWishlist(res.data.wishlist.products || []);
+    } catch (err) {
+      console.error("Unable to retrieve wishlist", err.response?.data || err.message);
+    }
+  };
+
   useEffect(() => {
-    // fetch products
-    axios
-      .get("https://ecom-backend-zed3.onrender.com/api/products/getproducts")
+    // Fetch products
+    api
+      .get("/products/getproducts") // relative path
       .then((res) => setProducts(res.data.data || []))
       .catch((err) => console.log("Unable to retrieve products", err));
 
@@ -22,22 +44,8 @@ const Home = () => {
         navigate("/admin");
         return;
       }
-
-      // fetch cart
-      axios
-        .get("https://ecom-backend-zed3.onrender.com/api/cart/view", {
-          headers: { Authorization: `Bearer ${user.token}` },
-        })
-        .then((res) => setCartItems(res.data.data.items || []))
-        .catch((err) => console.log("Unable to retrieve cart", err));
-
-      // fetch wishlist
-      axios
-        .get("https://ecom-backend-zed3.onrender.com/api/wishlist", {
-          headers: { Authorization: `Bearer ${user.token}` },
-        })
-        .then((res) => setWishlist(res.data.wishlist.products || [])) // ✅ fixed
-        .catch((err) => console.log("Unable to retrieve wishlist", err));
+      fetchCart();
+      fetchWishlist();
     }
   }, [user, navigate]);
 
@@ -48,28 +56,21 @@ const Home = () => {
       return navigate("/login");
     }
     try {
-      await axios.post(
-        "https://ecom-backend-zed3.onrender.com/api/cart/add",
-        { productId, quantity: 1 },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      setCartItems([...cartItems, { product: { _id: productId }, quantity: 1 }]);
+      await api.post("/cart/add", { productId, quantity: 1 });
+      setCartItems((prev) => [...prev, { product: { _id: productId }, quantity: 1 }]);
     } catch (err) {
       console.error("Add to cart failed", err.response?.data || err.message);
+      await fetchCart(); // sync
     }
   };
 
   const removeFromCart = async (productId) => {
     try {
-      await axios.delete(
-        `https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`,
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
-      );
-      setCartItems(cartItems.filter((item) => item.product._id !== productId));
+      await api.delete(`/cart/remove/${productId}`);
+      setCartItems((prev) => prev.filter((item) => item.product._id !== productId));
     } catch (err) {
       console.error("Remove from cart failed", err.response?.data || err.message);
+      await fetchCart();
     }
   };
 
@@ -80,26 +81,21 @@ const Home = () => {
       return navigate("/login");
     }
     try {
-      const res = await axios.post(
-        "https://ecom-backend-zed3.onrender.com/api/wishlist/add",
-        { productId },
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      setWishlist(res.data.wishlist.products || []); // ✅ fixed
+      const res = await api.post("/wishlist/add", { productId });
+      setWishlist(res.data.wishlist.products || []);
     } catch (err) {
       console.error("Add to wishlist failed", err.response?.data || err.message);
+      await fetchWishlist();
     }
   };
 
   const removeFromWishlist = async (productId) => {
     try {
-      const res = await axios.delete(
-        `https://ecom-backend-zed3.onrender.com/api/wishlist/remove/${productId}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
-      setWishlist(res.data.wishlist.products || []); // ✅ fixed
+      const res = await api.delete(`/wishlist/remove/${productId}`);
+      setWishlist(res.data.wishlist.products || []);
     } catch (err) {
       console.error("Remove from wishlist failed", err.response?.data || err.message);
+      await fetchWishlist();
     }
   };
 
@@ -114,10 +110,8 @@ const Home = () => {
       ) : (
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
           {products.map((product) => {
-            const inCart = cartItems.some(
-              (item) => item.product._id === product._id
-            );
-            const inWishlist = wishlist.some((p) => p._id === product._id); // ✅ fixed
+            const inCart = cartItems.some((item) => item.product._id === product._id);
+            const inWishlist = wishlist.some((p) => p._id === product._id);
 
             return (
               <div
@@ -125,18 +119,11 @@ const Home = () => {
                 className="bg-white shadow-md rounded-lg p-6 flex flex-col justify-between transition-transform hover:scale-105"
               >
                 <div>
-                  <h2 className="text-xl font-semibold text-gray-800">
-                    {product.name}
-                  </h2>
-                  <p className="text-blue-600 font-bold mt-1">
-                    ${product.price}
-                  </p>
-                  <p className="text-sm text-gray-500 mt-2">
-                    {product.description}
-                  </p>
+                  <h2 className="text-xl font-semibold text-gray-800">{product.name}</h2>
+                  <p className="text-blue-600 font-bold mt-1">${product.price}</p>
+                  <p className="text-sm text-gray-500 mt-2">{product.description}</p>
                 </div>
 
-                {/* CART BUTTONS */}
                 {inCart ? (
                   <button
                     onClick={() => removeFromCart(product._id)}
@@ -153,7 +140,6 @@ const Home = () => {
                   </button>
                 )}
 
-                {/* WISHLIST BUTTONS */}
                 {inWishlist ? (
                   <button
                     onClick={() => removeFromWishlist(product._id)}
@@ -170,7 +156,6 @@ const Home = () => {
                   </button>
                 )}
 
-                {/* REVIEWS LINK */}
                 <button
                   onClick={() => navigate(`/reviews/${product._id}`)}
                   className="mt-2 bg-yellow-500 hover:bg-yellow-600 text-white py-2 rounded"

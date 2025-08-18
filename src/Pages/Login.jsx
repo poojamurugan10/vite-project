@@ -18,7 +18,7 @@ const Login = () => {
       });
       const userData = { ...res.data, role: res.data.role };
       login(userData);
-      localStorage.setItem("user", JSON.stringify(userData));
+      localStorage.setItem("user", JSON.stringify({ token: res.data.token, role: res.data.role }));
       navigate(userData.role?.toLowerCase() === "admin" ? "/admin" : "/");
     } catch (error) {
       alert("Invalid Credentials");
