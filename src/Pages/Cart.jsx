@@ -10,17 +10,19 @@ const Cart = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
+  // ✅ Get token (reusable everywhere)
+  const token = user?.token || localStorage.getItem("token");
+  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
+
   // ✅ Fetch cart on page load
   useEffect(() => {
-    if (!user) {
+    if (!user && !localStorage.getItem("token")) {
       navigate("/login");
       return;
     }
 
-    api.get("https://ecom-backend-zed3.onrender.com/api/cart/view", {
-  headers: { Authorization: `Bearer ${user?.token || localStorage.getItem("token")}` }
-})
-
+    api
+      .get("https://ecom-backend-zed3.onrender.com/api/cart/view", authHeader)
       .then((res) => {
         const items = res.data?.data?.items || [];
         setCart(items);
@@ -47,9 +49,7 @@ const Cart = () => {
       await axios.put(
         `https://ecom-backend-zed3.onrender.com/api/cart/update/${productId}`,
         { change },
-        {
-          headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
-        }
+        authHeader
       );
 
       const updatedCart = cart.map((i) =>
@@ -70,9 +70,7 @@ const Cart = () => {
     try {
       await axios.delete(
         `https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`,
-        {
-          headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
-        }
+        authHeader
       );
 
       const updatedCart = cart.filter((i) => i.product._id !== productId);
@@ -93,9 +91,9 @@ const Cart = () => {
 
     try {
       await axios.post(
-        "https://ecom-backend-zed3.onrender.com/api/order/create",
-        {},
-        { headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` } }
+        "https://ecom-backend-zed3.onrender.com/api/orders",
+        { products: cart, totalPrice }, // ✅ send cart + total
+        authHeader
       );
 
       alert("Order placed successfully!");

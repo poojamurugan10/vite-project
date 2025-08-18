@@ -5,8 +5,8 @@ export default function PaymentButton({ amount }) {
   const handlePayment = async () => {
     try {
       // 1️⃣ Create order on backend
-      const { data } = await axios.post("http://localhost:5000/api/payment/create-order", {
-        amount: amount,
+      const { data } = await axios.post("http://localhost:5000/api/payment/checkout", {
+        amount,
       });
 
       if (!data.success) {
@@ -16,14 +16,32 @@ export default function PaymentButton({ amount }) {
 
       // 2️⃣ Setup Razorpay options
       const options = {
-        key: "rzp_test_R5IIEqhz9RxUJ6", 
-        amount: data.amount,
+        key: data.key,              // ✅ backend key
+        amount: data.amount,        // paise
         currency: data.currency,
         name: "My Ecom Store",
         description: "Test Transaction",
-        order_id: data.order_id,
-        handler: function (response) {
-          alert(`Payment Successful! Payment ID: ${response.razorpay_payment_id}`);
+        order_id: data.orderId,     // ✅ Razorpay order_id
+        handler: async function (response) {
+          try {
+            // 3️⃣ Verify payment on backend
+            const verifyRes = await axios.post("http://localhost:5000/api/payment/verify", {
+              razorpay_order_id: response.razorpay_order_id,
+              razorpay_payment_id: response.razorpay_payment_id,
+              razorpay_signature: response.razorpay_signature,
+              orderId: data.dbOrderId, // 👈 your MongoDB order
+            });
+
+            if (verifyRes.data.success) {
+              // Redirect on success
+              window.location.href = "http://localhost:5173/payment-success";
+            } else {
+              window.location.href = "http://localhost:5173/payment-failed";
+            }
+          } catch (err) {
+            console.error("Verification error:", err);
+            window.location.href = "http://localhost:5173/payment-failed";
+          }
         },
         prefill: {
           name: "John Doe",

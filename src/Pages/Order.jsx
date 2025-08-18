@@ -16,7 +16,7 @@ const Order = () => {
       return;
     }
     axios
-      .get("https://ecom-backend-zed3.onrender.com/api/order/myorders", {
+      .get("https://ecom-backend-zed3.onrender.com/api/orders/myorders", {
         headers: { Authorization: `Bearer ${user.token}` },
       })
       .then((res) => {
