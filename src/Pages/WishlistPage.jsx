@@ -8,27 +8,29 @@ const WishlistPage = () => {
   const navigate = useNavigate();
   const [wishlist, setWishlist] = useState([]);
 
+  const token = user?.token || localStorage.getItem("token");
+
   useEffect(() => {
-    if (!user) {
+    if (!token) {
       navigate("/login");
       return;
     }
 
     axios
       .get("https://ecom-backend-zed3.onrender.com/api/wishlist", {
-        headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` },
+        headers: { Authorization: `Bearer ${token}` },
       })
       .then((res) => setWishlist(res.data.wishlist.products || []))
       .catch((err) => console.error("Error fetching wishlist:", err));
-  }, [user, navigate]);
+  }, [token, navigate]);
 
   const removeFromWishlist = async (productId) => {
     try {
       const res = await axios.delete(
         `https://ecom-backend-zed3.onrender.com/api/wishlist/remove/${productId}`,
-        { headers: { Authorization: `Bearer ${user.token} || localStorage.getItem("token")}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
-      setWishlist(res.data.wishlist.products || []); 
+      setWishlist(res.data.wishlist.products || []);
     } catch (err) {
       console.error("Error removing item:", err);
     }
@@ -53,9 +55,7 @@ const WishlistPage = () => {
                 <h2 className="text-xl font-semibold text-gray-800">
                   {product.name}
                 </h2>
-                <p className="text-blue-600 font-bold mt-1">
-                  ${product.price}
-                </p>
+                <p className="text-blue-600 font-bold mt-1">${product.price}</p>
                 <p className="text-sm text-gray-500 mt-2">
                   {product.description}
                 </p>

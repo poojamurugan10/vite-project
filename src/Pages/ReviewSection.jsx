@@ -6,10 +6,12 @@ import { useParams, useNavigate } from "react-router-dom";
 const Reviews = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
-  const { productId } = useParams(); // productId will come from route
+  const { productId } = useParams();
   const [reviews, setReviews] = useState([]);
   const [rating, setRating] = useState(0);
   const [comment, setComment] = useState("");
+
+  const token = user?.token || localStorage.getItem("token");
 
   // Fetch reviews
   useEffect(() => {
@@ -24,7 +26,7 @@ const Reviews = () => {
   // Add review
   const handleAddReview = async (e) => {
     e.preventDefault();
-    if (!user) {
+    if (!token) {
       navigate("/login");
       return;
     }
@@ -33,9 +35,7 @@ const Reviews = () => {
       const res = await axios.post(
         `https://ecom-backend-zed3.onrender.com/api/review/add/${productId}`,
         { rating, comment },
-        {
-          headers: { Authorization: `Bearer ${user.token}` },
-        }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setReviews([...reviews, res.data.review]);
       setRating(0);
@@ -50,7 +50,7 @@ const Reviews = () => {
     try {
       await axios.delete(
         `https://ecom-backend-zed3.onrender.com/api/review/${reviewId}`,
-        { headers: { Authorization: `Bearer ${user.token}` } }
+        { headers: { Authorization: `Bearer ${token}` } }
       );
       setReviews(reviews.filter((r) => r._id !== reviewId));
     } catch (err) {
@@ -75,9 +75,7 @@ const Reviews = () => {
               className="bg-white shadow-md rounded-lg p-4 flex justify-between items-start"
             >
               <div>
-                <p className="text-yellow-600 font-bold">
-                  ⭐ {review.rating} / 5
-                </p>
+                <p className="text-yellow-600 font-bold">⭐ {review.rating} / 5</p>
                 <p className="text-gray-700 mt-1">{review.comment}</p>
                 <p className="text-sm text-gray-500 mt-1">
                   By {review.user?.name || "Anonymous"}
@@ -102,9 +100,7 @@ const Reviews = () => {
           onSubmit={handleAddReview}
           className="mt-8 bg-white shadow-md rounded-lg p-6"
         >
-          <h2 className="text-xl font-semibold text-gray-800 mb-4">
-            Add a Review
-          </h2>
+          <h2 className="text-xl font-semibold text-gray-800 mb-4">Add a Review</h2>
 
           <div className="mb-4">
             <label className="block text-gray-700">Rating</label>

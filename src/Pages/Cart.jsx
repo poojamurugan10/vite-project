@@ -1,5 +1,4 @@
 import React, { useContext, useEffect, useState } from "react";
-import axios from "axios";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
@@ -10,25 +9,23 @@ const Cart = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
-  // ✅ Get token (reusable everywhere)
-  const token = user?.token || localStorage.getItem("token");
-  const authHeader = { headers: { Authorization: `Bearer ${token}` } };
-
   // ✅ Fetch cart on page load
   useEffect(() => {
-    if (!user && !localStorage.getItem("token")) {
+    const token = localStorage.getItem("token");
+    if (!token) {
       navigate("/login");
       return;
     }
 
-    api
-      .get("https://ecom-backend-zed3.onrender.com/api/cart/view", authHeader)
+    api.get("/cart/view")
       .then((res) => {
         const items = res.data?.data?.items || [];
         setCart(items);
         calculateTotal(items);
       })
-      .catch((err) => console.error("Unable to retrieve cart:", err));
+      .catch((err) =>
+        console.error("Unable to retrieve cart:", err.response?.data || err)
+      );
   }, [user, navigate]);
 
   // ✅ Calculate total price
@@ -46,11 +43,7 @@ const Cart = () => {
     if (!item || item.quantity + change < 1) return;
 
     try {
-      await axios.put(
-        `https://ecom-backend-zed3.onrender.com/api/cart/update/${productId}`,
-        { change },
-        authHeader
-      );
+      await api.put(`/cart/update/${productId}`, { change });
 
       const updatedCart = cart.map((i) =>
         i.product._id === productId
@@ -60,7 +53,7 @@ const Cart = () => {
       setCart(updatedCart);
       calculateTotal(updatedCart);
     } catch (err) {
-      console.error("Error updating quantity:", err);
+      console.error("Error updating quantity:", err.response?.data || err);
       alert("Error updating quantity");
     }
   };
@@ -68,16 +61,12 @@ const Cart = () => {
   // ✅ Remove item from cart
   const removeFromCart = async (productId) => {
     try {
-      await axios.delete(
-        `https://ecom-backend-zed3.onrender.com/api/cart/remove/${productId}`,
-        authHeader
-      );
-
+      await api.delete(`/cart/remove/${productId}`);
       const updatedCart = cart.filter((i) => i.product._id !== productId);
       setCart(updatedCart);
       calculateTotal(updatedCart);
     } catch (err) {
-      console.error("Error removing item:", err);
+      console.error("Error removing item:", err.response?.data || err);
       alert("Error removing item from cart");
     }
   };
@@ -90,19 +79,15 @@ const Cart = () => {
     }
 
     try {
-      await axios.post(
-        "https://ecom-backend-zed3.onrender.com/api/orders",
-        { products: cart, totalPrice }, // ✅ send cart + total
-        authHeader
-      );
+      await api.post("/orders", { products: cart, totalPrice });
 
-      alert("Order placed successfully!");
+      alert("✅ Order placed successfully!");
       setCart([]);
       setTotalPrice(0);
       navigate("/order");
     } catch (err) {
-      console.error("Error placing order:", err);
-      alert("Error placing order!");
+      console.error("Error placing order:", err.response?.data || err);
+      alert("❌ Error placing order!");
     }
   };
 

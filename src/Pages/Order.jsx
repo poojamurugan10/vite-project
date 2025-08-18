@@ -1,7 +1,7 @@
-import axios from "axios";
 import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
+import api from "../api";
 
 const Order = () => {
   const { user } = useContext(AuthContext);
@@ -11,21 +11,19 @@ const Order = () => {
 
   // ✅ Fetch User Orders
   const fetchOrders = () => {
-    if (!user || !user.token) {
+    const token = localStorage.getItem("token");
+    if (!token) {
       navigate("/login");
       return;
     }
-    axios
-      .get("https://ecom-backend-zed3.onrender.com/api/orders/myorders", {
-        headers: { Authorization: `Bearer ${user.token}` },
-      })
+
+    api.get("/orders/myorders")
       .then((res) => {
         setOrders(res.data.data || []);
         setLoading(false);
       })
       .catch((err) => {
-        console.log(err);
-        alert("Error in fetching orders");
+        console.error("Error fetching orders:", err.response?.data || err);
         setLoading(false);
       });
   };
@@ -34,88 +32,71 @@ const Order = () => {
     fetchOrders();
   }, [user, navigate]);
 
-  /// ✅ Proceed to Razorpay Checkout
-const proceedToPayment = async (totalAmount, orderId, products) => {
-  if (!user || !user.token) {
-    navigate("/login");
-    return;
-  }
+  // ✅ Proceed to Razorpay Checkout
+  const proceedToPayment = async (totalAmount, orderId, products) => {
+    try {
+      const res = await api.post("/payments/checkout", {
+        amount: totalAmount,
+        orderId,
+        products,
+      });
 
-  try {
-    // 1️⃣ Create Razorpay order in backend with products
-    const res = await axios.post(
-      "https://ecom-backend-zed3.onrender.com/api/payments/checkout",
-      { amount: totalAmount, orderId, products }, // ✅ send products too
-      { headers: { Authorization: `Bearer ${user.token}` } }
-    );
+      const { orderId: razorpayOrderId, amount, currency, key } = res.data;
 
-    const { orderId: razorpayOrderId, amount, currency, key } = res.data;
-
-    // 2️⃣ Razorpay options
-    const options = {
-      key,
-      amount,
-      currency,
-      name: "E-Comm Store",
-      description: "Order Payment",
-      order_id: razorpayOrderId,
-      handler: async function (response) {
-        try {
-          // 3️⃣ Verify Payment in Backend
-          const verifyRes = await axios.post(
-            "https://ecom-backend-zed3.onrender.com/api/payments/verify",
-            {
+      const options = {
+        key,
+        amount,
+        currency,
+        name: "E-Comm Store",
+        description: "Order Payment",
+        order_id: razorpayOrderId,
+        handler: async function (response) {
+          try {
+            const verifyRes = await api.post("/payments/verify", {
               razorpay_payment_id: response.razorpay_payment_id,
               razorpay_order_id: response.razorpay_order_id,
               razorpay_signature: response.razorpay_signature,
-              orderId, // ✅ our DB order
-            },
-            { headers: { Authorization: `Bearer ${user.token}` } }
-          );
+              orderId,
+            });
 
-          if (verifyRes.data.success) {
-            alert("✅ Payment successful!");
-            fetchOrders(); // refresh orders
-          } else {
-            alert("❌ Payment verification failed");
+            if (verifyRes.data.success) {
+              alert("✅ Payment successful!");
+              fetchOrders();
+            } else {
+              alert("❌ Payment verification failed");
+            }
+          } catch (err) {
+            console.error("Verification error:", err.response?.data || err);
+            alert("❌ Error verifying payment");
           }
-        } catch (err) {
-          console.error("Verification error:", err);
-          alert("❌ Error verifying payment");
-        }
-      },
-      prefill: { email: user.email },
-      theme: { color: "#3399cc" },
-    };
+        },
+        prefill: { email: user?.email },
+        theme: { color: "#3399cc" },
+      };
 
-    const rzp = new window.Razorpay(options);
-    rzp.open();
-  } catch (err) {
-    console.error("Payment error", err.response?.data || err.message);
-    alert("Error in processing payment");
-  }
-};
-
+      const rzp = new window.Razorpay(options);
+      rzp.open();
+    } catch (err) {
+      console.error("Payment error", err.response?.data || err.message);
+      alert("Error in processing payment");
+    }
+  };
 
   // ✅ Cancel Order
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
     try {
-      const res = await axios.put(
-        `https://ecom-backend-zed3.onrender.com/api/payments/cancel/${orderId}`,
-        {},
-        { headers: { Authorization: `Bearer ${user.token}` } }
-      );
+      const res = await api.put(`/payments/cancel/${orderId}`);
 
       if (res.data.success) {
         alert("✅ Order cancelled!");
-        fetchOrders(); // refresh list
+        fetchOrders();
       } else {
         alert("❌ Could not cancel order");
       }
     } catch (err) {
-      console.error("Cancel error:", err);
+      console.error("Cancel error:", err.response?.data || err);
       alert("❌ Error cancelling order");
     }
   };
@@ -131,68 +112,66 @@ const proceedToPayment = async (totalAmount, orderId, products) => {
         <p className="text-center text-gray-500">No orders placed yet.</p>
       ) : (
         <div className="max-w-4xl mx-auto">
-          {orders.map((order) => {
-            return (
-              <div
-                key={order._id}
-                className="bg-white shadow-md rounded p-5 mb-6"
-              >
-                <h2 className="text-xl font-semibold mb-2">
-                  Order Id: <span className="text-blue-500">{order._id}</span>
-                </h2>
-                <p>
-                  <strong>Status:</strong>{" "}
-                  <span
-                    className={
-                      order.status === "Paid"
-                        ? "text-green-600"
-                        : order.status === "Cancelled"
-                        ? "text-red-600"
-                        : "text-yellow-500"
-                    }
-                  >
-                    {order.status}
+          {orders.map((order) => (
+            <div
+              key={order._id}
+              className="bg-white shadow-md rounded p-5 mb-6"
+            >
+              <h2 className="text-xl font-semibold mb-2">
+                Order Id: <span className="text-blue-500">{order._id}</span>
+              </h2>
+              <p>
+                <strong>Status:</strong>{" "}
+                <span
+                  className={
+                    order.status === "Paid"
+                      ? "text-green-600"
+                      : order.status === "Cancelled"
+                      ? "text-red-600"
+                      : "text-yellow-500"
+                  }
+                >
+                  {order.status}
+                </span>
+              </p>
+              <p>
+                <strong>Total Price:</strong>{" "}
+                <span className="text-green-500">₹{order.totalPrice}</span>
+              </p>
+              <h3 className="text-lg font-semibold mt-4 mb-2">🛍️ Items:</h3>
+              {order.products?.map((item, index) => (
+                <div
+                  key={index}
+                  className="border rounded p-2 mb-2 flex justify-between items-center"
+                >
+                  <span>{item?.product?.name || "Product Not Found"}</span>
+                  <span>
+                    ₹{item?.product?.price || 0} ❌ {item.quantity}
                   </span>
-                </p>
-                <p>
-                  <strong>Total Price:</strong>{" "}
-                  <span className="text-green-500">₹{order.totalPrice}</span>
-                </p>
-                <h3 className="text-lg font-semibold mt-4 mb-2">🛍️ Items:</h3>
-                {order.products?.map((item, index) => (
-                  <div
-                    key={index}
-                    className="border rounded p-2 mb-2 flex justify-between items-center"
-                  >
-                    <span>{item?.product?.name || "Product Not Found"}</span>
-                    <span>
-                      ₹{item?.product?.price || 0} ❌ {item.quantity}
-                    </span>
-                  </div>
-                ))}
+                </div>
+              ))}
 
-                {/* ✅ Buttons for Pending Orders */}
-                {order.status === "Pending" && (
-                  <div className="flex gap-3 mt-4">
-                    <button
-                      onClick={() =>
-                        proceedToPayment(order.totalPrice, order._id)
-                      }
-                      className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded shadow"
-                    >
-                      Proceed to Payment
-                    </button>
-                    <button
-                      onClick={() => cancelOrder(order._id)}
-                      className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow"
-                    >
-                      Cancel Order
-                    </button>
-                  </div>
-                )}
-              </div>
-            );
-          })}
+              {/* ✅ Buttons for Pending Orders */}
+              {order.status === "Pending" && (
+                <div className="flex gap-3 mt-4">
+                  <button
+                    onClick={() =>
+                      proceedToPayment(order.totalPrice, order._id, order.products)
+                    }
+                    className="flex-1 bg-green-600 hover:bg-green-700 text-white font-bold py-3 rounded shadow"
+                  >
+                    Proceed to Payment
+                  </button>
+                  <button
+                    onClick={() => cancelOrder(order._id)}
+                    className="flex-1 bg-red-600 hover:bg-red-700 text-white font-bold py-3 rounded shadow"
+                  >
+                    Cancel Order
+                  </button>
+                </div>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
