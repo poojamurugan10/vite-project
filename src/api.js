@@ -4,7 +4,7 @@ const api = axios.create({
   baseURL: "https://ecom-backend-zed3.onrender.com/api",
 });
 
-// ✅ Attach token automatically for all requests
+// Attach token automatically for all requests
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem("token");
   if (token) {

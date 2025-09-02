@@ -9,7 +9,7 @@ const Cart = () => {
   const [cart, setCart] = useState([]);
   const [totalPrice, setTotalPrice] = useState(0);
 
-  // ✅ Fetch cart on page load
+  
   useEffect(() => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -28,7 +28,7 @@ const Cart = () => {
       );
   }, [user, navigate]);
 
-  // ✅ Calculate total price
+
   const calculateTotal = (cartItems) => {
     const total = cartItems.reduce(
       (acc, item) => acc + item.product.price * item.quantity,
@@ -37,7 +37,7 @@ const Cart = () => {
     setTotalPrice(total);
   };
 
-  // ✅ Update quantity
+  
   const updateQuantity = async (productId, change) => {
     const item = cart.find((i) => i.product._id === productId);
     if (!item || item.quantity + change < 1) return;
@@ -58,7 +58,7 @@ const Cart = () => {
     }
   };
 
-  // ✅ Remove item from cart
+  
   const removeFromCart = async (productId) => {
     try {
       await api.delete(`/cart/remove/${productId}`);
@@ -71,7 +71,7 @@ const Cart = () => {
     }
   };
 
-  // ✅ Place order
+  
   const placeOrder = async () => {
     if (cart.length === 0) {
       alert("Cart is empty. Cannot place order.");

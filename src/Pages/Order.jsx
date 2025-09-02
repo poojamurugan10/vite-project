@@ -9,7 +9,7 @@ const Order = () => {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
 
-  // ✅ Fetch User Orders
+  //  Fetch User Orders
   const fetchOrders = () => {
     const token = localStorage.getItem("token");
     if (!token) {
@@ -32,7 +32,7 @@ const Order = () => {
     fetchOrders();
   }, [user, navigate]);
 
-  // ✅ Proceed to Razorpay Checkout
+  // Proceed to Razorpay Checkout
   const proceedToPayment = async (totalAmount, orderId, products) => {
     try {
       const res = await api.post("/payments/checkout", {
@@ -60,7 +60,7 @@ const Order = () => {
             });
 
             if (verifyRes.data.success) {
-              alert("✅ Payment successful!");
+              alert("Payment successful!");
               fetchOrders();
             } else {
               alert("❌ Payment verification failed");
@@ -82,7 +82,7 @@ const Order = () => {
     }
   };
 
-  // ✅ Cancel Order
+  // Cancel Order
   const cancelOrder = async (orderId) => {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
 
@@ -151,7 +151,7 @@ const Order = () => {
                 </div>
               ))}
 
-              {/* ✅ Buttons for Pending Orders */}
+              {/* Buttons for Pending Orders */}
               {order.status === "Pending" && (
                 <div className="flex gap-3 mt-4">
                   <button

@@ -13,7 +13,7 @@ const ProductDetails = () => {
   const [cartItems, setCartItems] = useState([]);
   const [newReview, setNewReview] = useState({ rating: 5, comment: "" });
 
-  // ✅ Fetch product + reviews + cart + wishlist
+  //  Fetch product + reviews + cart + wishlist
   useEffect(() => {
     axios
       .get(`https://ecom-backend-zed3.onrender.com/api/products/${id}`)
@@ -40,7 +40,7 @@ const ProductDetails = () => {
     }
   }, [id, user]);
 
-  // ✅ Add to Cart
+  //  Add to Cart
   const addToCart = async () => {
     if (!user) return alert("Login required");
     await axios.post(
@@ -51,7 +51,7 @@ const ProductDetails = () => {
     setCartItems([...cartItems, { product: { _id: id }, quantity: 1 }]);
   };
 
-  // ✅ Remove from Cart
+  //  Remove from Cart
   const removeFromCart = async () => {
     if (!user) return alert("Login required");
     await axios.delete(
@@ -61,7 +61,7 @@ const ProductDetails = () => {
     setCartItems(cartItems.filter((item) => item.product._id !== id));
   };
 
-  // ✅ Add to Wishlist
+  // Add to Wishlist
   const addToWishlist = async () => {
     if (!user) return alert("Login required");
     await axios.post(
@@ -72,7 +72,7 @@ const ProductDetails = () => {
     setWishlist([...wishlist, { _id: id }]);
   };
 
-  // ✅ Remove from Wishlist
+  //  Remove from Wishlist
   const removeFromWishlist = async () => {
     if (!user) return alert("Login required");
     await axios.delete(
@@ -82,7 +82,7 @@ const ProductDetails = () => {
     setWishlist(wishlist.filter((p) => p._id !== id));
   };
 
-  // ✅ Add Review
+  //  Add Review
   const submitReview = async (e) => {
     e.preventDefault();
     if (!user) return alert("Login required");

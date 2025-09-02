@@ -1,72 +1,99 @@
-import React from "react";
-import axios from "axios";
+import { useContext } from "react";
+import { Link, useNavigate } from "react-router-dom";
+import { AuthContext } from "../Context/AuthContext";
 
-export default function PaymentButton({ amount }) {
-  const handlePayment = async () => {
-    try {
-      // 1️⃣ Create order on backend
-      const { data } = await axios.post("http://localhost:5000/api/payment/checkout", {
-        amount,
-      });
+const Navbar = () => {
+  const { user, logout } = useContext(AuthContext);
+  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isSeller = user?.role?.toLowerCase() === "seller";
+  const navigate = useNavigate();
 
-      if (!data.success) {
-        alert("Order creation failed!");
-        return;
-      }
-
-      // 2️⃣ Setup Razorpay options
-      const options = {
-        key: data.key,              // ✅ backend key
-        amount: data.amount,        // paise
-        currency: data.currency,
-        name: "My Ecom Store",
-        description: "Test Transaction",
-        order_id: data.orderId,     // ✅ Razorpay order_id
-        handler: async function (response) {
-          try {
-            // 3️⃣ Verify payment on backend
-            const verifyRes = await axios.post("http://localhost:5000/api/payment/verify", {
-              razorpay_order_id: response.razorpay_order_id,
-              razorpay_payment_id: response.razorpay_payment_id,
-              razorpay_signature: response.razorpay_signature,
-              orderId: data.dbOrderId, // 👈 your MongoDB order
-            });
-
-            if (verifyRes.data.success) {
-              // Redirect on success
-              window.location.href = "http://localhost:5173/payment-success";
-            } else {
-              window.location.href = "http://localhost:5173/payment-failed";
-            }
-          } catch (err) {
-            console.error("Verification error:", err);
-            window.location.href = "http://localhost:5173/payment-failed";
-          }
-        },
-        prefill: {
-          name: "John Doe",
-          email: "john@example.com",
-          contact: "9999999999",
-        },
-        theme: {
-          color: "#3399cc",
-        },
-      };
-
-      const rzp = new window.Razorpay(options);
-      rzp.open();
-    } catch (err) {
-      console.error(err);
-      alert("Something went wrong during payment");
-    }
+  const handleLogout = () => {
+    logout();
+    navigate("/login");
   };
 
   return (
-    <button
-      onClick={handlePayment}
-      className="px-4 py-2 bg-green-500 text-white rounded"
-    >
-      Pay ₹{amount}
-    </button>
+    <nav className="bg-white shadow-md text-gray-800">
+      <div className="max-w-7xl mx-auto px-6 py-3 flex justify-between items-center">
+        {/* Logo */}
+        <Link
+          to="/"
+          className="text-xl font-extrabold text-blue-600 tracking-wide"
+        >
+          🛒 E-Comm
+        </Link>
+
+        {/* Links */}
+        <div className="flex space-x-6 items-center text-gray-700 font-medium">
+          <Link to="/" className="hover:text-blue-600 transition duration-300">
+            Home
+          </Link>
+
+          {isAdmin && (
+            <Link
+              to="/admin"
+              className="hover:text-blue-600 transition duration-300"
+            >
+              Admin Panel
+            </Link>
+          )}
+
+          {isSeller && (
+            <Link
+              to="/seller"
+              className="hover:text-green-600 transition duration-300"
+            >
+              Seller Panel
+            </Link>
+          )}
+
+          {/* Normal User Links */}
+          {user && !isAdmin && !isSeller && (
+            <>
+              <Link
+                to="/cart"
+                className="hover:text-blue-600 transition duration-300"
+              >
+                Cart
+              </Link>
+              <Link
+                to="/wishlist"
+                className="hover:text-pink-600 transition duration-300"
+              >
+                Wishlist
+              </Link>
+            </>
+          )}
+
+          {/* Auth Links */}
+          {user ? (
+            <button
+              onClick={handleLogout}
+              className="bg-red-500 text-white px-3 py-1 rounded hover:bg-red-600 transition"
+            >
+              Logout
+            </button>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className="hover:text-blue-600 transition duration-300"
+              >
+                Login
+              </Link>
+              <Link
+                to="/register"
+                className="hover:text-blue-600 transition duration-300"
+              >
+                Register
+              </Link>
+            </>
+          )}
+        </div>
+      </div>
+    </nav>
   );
-}
+};
+
+export default Navbar;

@@ -53,7 +53,7 @@ const CartPage = () => {
       alert("Your cart is empty!");
       return;
     }
-    // ✅ you can navigate to payment page & pass updated cart
+  
     navigate("/payment", { state: { cartItems, total } });
   };
 

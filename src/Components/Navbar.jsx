@@ -4,7 +4,8 @@ import { AuthContext } from "../Context/AuthContext";
 
 const Navbar = () => {
   const { user, logout } = useContext(AuthContext);
-  const isAdmin = user?.role?.toLowerCase() === "admin";
+  const isAdmin = user?.role === "admin";
+  const isSeller = user?.role === "seller";
   const navigate = useNavigate();
 
   const handleLogout = () => {
@@ -23,31 +24,31 @@ const Navbar = () => {
         </Link>
 
         <div className="flex space-x-6 items-center text-gray-700 font-medium">
-          <Link to="/" className="hover:text-blue-600 transition duration-300">
+          <Link to="/" className="hover:text-blue-600 transition">
             Home
           </Link>
 
           {isAdmin && (
-            <Link
-              to="/admin"
-              className="hover:text-blue-600 transition duration-300"
-            >
+            <Link to="/admin" className="hover:text-blue-600 transition">
               Admin Panel
             </Link>
           )}
 
-          {user && !isAdmin && (
+          {isSeller && (
+            <Link to="/seller" className="hover:text-green-600 transition">
+              Seller Dashboard
+            </Link>
+          )}
+
+          {!isAdmin && !isSeller && (
             <>
-              <Link
-                to="/cart"
-                className="hover:text-blue-600 transition duration-300"
-              >
+              <Link to="/products" className="hover:text-blue-600 transition">
+                Products
+              </Link>
+              <Link to="/cart" className="hover:text-blue-600 transition">
                 Cart
               </Link>
-              <Link
-                to="/wishlist"
-                className="hover:text-pink-600 transition duration-300"
-              >
+              <Link to="/wishlist" className="hover:text-pink-600 transition">
                 Wishlist
               </Link>
             </>
@@ -62,16 +63,10 @@ const Navbar = () => {
             </button>
           ) : (
             <>
-              <Link
-                to="/login"
-                className="hover:text-blue-600 transition duration-300"
-              >
+              <Link to="/login" className="hover:text-blue-600 transition">
                 Login
               </Link>
-              <Link
-                to="/register"
-                className="hover:text-blue-600 transition duration-300"
-              >
+              <Link to="/register" className="hover:text-blue-600 transition">
                 Register
               </Link>
             </>

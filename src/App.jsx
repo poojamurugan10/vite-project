@@ -1,28 +1,22 @@
-import React, { useContext, useEffect } from "react";
+import React, { useContext } from "react";
+import { Routes, Route, Navigate } from "react-router-dom";
 import Navbar from "./Components/Navbar";
-import { Navigate, Route, Routes } from "react-router-dom";
+import { AuthContext } from "./Context/AuthContext";
+
 import Home from "./Pages/Home";
 import Login from "./Pages/Login";
 import Register from "./Pages/Register";
 import Cart from "./Pages/Cart";
-import Order from "./Pages/Order";
-import AdminDashboard from "./Admin/AdminDashboard";
-import Success from "./Pages/Success";
-import Cancel from "./Pages/Cancel";
-import NotFound from "./Pages/NotFound";
-import { AuthContext } from "./Context/AuthContext";
 import WishlistPage from "./Pages/WishlistPage";
+import ProductList from "./Pages/ProductList";
 import ProductDetails from "./Pages/ProductDetails";
-import Reviews from "./Pages/ReviewSection";
-
-
+import AdminDashboard from "./Admin/AdminDashboard";
+import SellerDashboard from "./Admin/SellerDashboard";
+import AddProduct from "./Pages/AddProduct";
+import NotFound from "./Pages/NotFound";
 
 const App = () => {
   const { user } = useContext(AuthContext);
-
-  useEffect(() => {
-    console.log("User data from authcontext", user);
-  }, [user]);
 
   return (
     <>
@@ -33,25 +27,34 @@ const App = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/cart" element={<Cart />} />
-        <Route path="/order" element={<Order />} />
         <Route path="/wishlist" element={<WishlistPage />} />
-        <Route path="/reviews/:productId" element={<Reviews />} />
-
+        <Route path="/products" element={<ProductList />} />
         <Route path="/product/:id" element={<ProductDetails />} />
+
+        {/* Admin Dashboard */}
         <Route
           path="/admin"
           element={
-            user && user.role?.toLowerCase() === "admin" ? (
-              <AdminDashboard />
-            ) : (
-              <Navigate to={"/"} />
-            )
+            user?.role === "admin" ? <AdminDashboard /> : <Navigate to="/" />
           }
         />
-         
 
-        <Route path="/success" element={<Success />} />
-        <Route path="/cancel" element={<Cancel />} />
+        {/* Seller Dashboard */}
+        <Route
+          path="/seller"
+          element={
+            user?.role === "seller" ? <SellerDashboard /> : <Navigate to="/" />
+          }
+        />
+
+        {/* Add Product Page */}
+        <Route
+          path="/seller/add-product"
+          element={
+            user?.role === "seller" ? <AddProduct /> : <Navigate to="/" />
+          }
+        />
+
         <Route path="*" element={<NotFound />} />
       </Routes>
     </>
