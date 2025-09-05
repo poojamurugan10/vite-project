@@ -11,16 +11,20 @@ const Login = () => {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    console.log("🚀 Login form submitted with:", { email, password });
     try {
       const res = await axios.post("https://ecom-backend-zed3.onrender.com/api/auth/login", {
         email,
         password,
       });
-      const userData = { ...res.data, role: res.data.role };
-      login(userData);
-      localStorage.setItem("user", JSON.stringify({ token: res.data.token, role: res.data.role }));
-      navigate(userData.role?.toLowerCase() === "admin" ? "/admin" : "/");
+      const userData = { ...res.data.user, token: res.data.token };
+login(userData);
+localStorage.setItem("user", JSON.stringify(userData));
+navigate(userData.role?.toLowerCase() === "seller" ? "/seller" : "/");
+
     } catch (error) {
+      console.error("❌ Login error:", error);
+
       alert("Invalid Credentials");
     }
   };
