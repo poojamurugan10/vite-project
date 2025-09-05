@@ -12,15 +12,19 @@ const ProductList = () => {
 
       //  If seller, fetch only their products
       if (user?.role === "seller") {
-        endpoint = "/products/getproducts?sellerId=" + user._id;
-      }
+        endpoint = `/products/getproducts?seller=${user._id}&limit=50`; // fetch enough products
+    } else {
+      endpoint = `/products/getproducts?limit=50`; // fetch more for homepage
+    }
 
       const res = await api.get(endpoint);
-      setProducts(res.data || []);
-    } catch (error) {
-      console.error("Error fetching products:", error.response?.data || error.message);
-    }
-  };
+      const productsArray = res.data.products || res.data || [];
+    setProducts(productsArray);
+    console.log("Products API response:", res.data);
+  } catch (error) {
+    console.error("Error fetching products:", error.response?.data || error.message);
+  }
+};
 
   const handleDelete = async (id) => {
     if (!window.confirm("Are you sure you want to delete this product?")) return;

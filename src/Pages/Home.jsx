@@ -2,11 +2,13 @@ import React, { useContext, useEffect, useState } from "react";
 import { AuthContext } from "../Context/AuthContext";
 import { useNavigate } from "react-router-dom";
 import api from "../api";
+import Filter from "../Components/Filter";
 
 const Home = () => {
   const { user } = useContext(AuthContext);
   const navigate = useNavigate();
   const [products, setProducts] = useState([]);
+  const [filteredProducts, setFilteredProducts] = useState([]);
   const [cartItems, setCartItems] = useState([]);
   const [wishlist, setWishlist] = useState([]);
 
@@ -33,11 +35,10 @@ const Home = () => {
 
   // ---------------- USE EFFECT ----------------
   useEffect(() => {
-    // Fetch products
-    api.get("/products/getproducts")
+    api.get("/products/getproducts?limit=50&sort=newest")
       .then((res) => {
-        console.log("Products API response:", res.data);
-        setProducts(res.data || []);
+        setProducts(res.data.products || []);
+        setFilteredProducts(res.data.products || []);
       })
       .catch((err) => console.log("Unable to retrieve products", err));
 
@@ -53,10 +54,12 @@ const Home = () => {
 
   // ---------------- CART FUNCTIONS ----------------
   const addToCart = async (productId) => {
-    if (!user) {
-      alert("Please login to add items to the cart");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add items");
       return navigate("/login");
     }
+
     try {
       await api.post("/cart/add", { productId, quantity: 1 });
       setCartItems((prev) => [...prev, { product: { _id: productId }, quantity: 1 }]);
@@ -78,10 +81,12 @@ const Home = () => {
 
   // ---------------- WISHLIST FUNCTIONS ----------------
   const addToWishlist = async (productId) => {
-    if (!user) {
-      alert("Please login to add to wishlist");
+    const token = localStorage.getItem("token");
+    if (!token) {
+      alert("Please login to add items");
       return navigate("/login");
     }
+
     try {
       const res = await api.post("/wishlist/add", { productId });
       setWishlist(res.data.wishlist?.products || []);
@@ -101,6 +106,25 @@ const Home = () => {
     }
   };
 
+  // ---------------- FILTER FUNCTION ----------------
+  const handleFilterChange = ({ category, brand, sort }) => {
+    let temp = [...products];
+
+    // Filter by category
+    if (category) temp = temp.filter((p) => p.category === category);
+
+    // Filter by brand
+    if (brand) temp = temp.filter((p) => p.brand === brand);
+
+    // Sort
+    if (sort === "newest") temp.sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt));
+    if (sort === "oldest") temp.sort((a, b) => new Date(a.createdAt) - new Date(b.createdAt));
+    if (sort === "priceAsc") temp.sort((a, b) => a.price - b.price);
+    if (sort === "priceDesc") temp.sort((a, b) => b.price - a.price);
+
+    setFilteredProducts(temp);
+  };
+
   // ---------------- UI ----------------
   return (
     <div className="min-h-screen bg-gradient-to-br from-[#f8fafc] to-[#e2e8f0] px-6 py-10">
@@ -108,11 +132,20 @@ const Home = () => {
         Explore Our <span className="text-blue-600">Products</span>
       </h1>
 
-      {products.length === 0 ? (
-        <p className="text-center text-gray-600">No Products Available.</p>
+      {/* FILTER COMPONENT */}
+      {products.length !== 0 && (
+        <Filter
+          onFilterChange={handleFilterChange}
+          categories={[...new Set(products.map((p) => p.category))]}
+          brands={[...new Set(products.map((p) => p.brand))]}
+        />
+      )}
+
+      {filteredProducts.length === 0 ? (
+        <p className="text-center text-gray-600 mt-6">No Products Available.</p>
       ) : (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {products.map((product) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6 mt-4">
+          {filteredProducts.map((product) => {
             const inCart = cartItems.some((item) => item.product._id === product._id);
             const inWishlist = wishlist.some((p) => p._id === product._id);
 
